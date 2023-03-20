@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FabricJS editor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="./style.css">
+    <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
+</head>
+<body class="w-100 min-vh-100 d-flex flex-column">
+    <header class="w-100 shadow bg-secondary-light">
+        <ul class="nav nav-pills p-2 d-flex flex-col-gap-1">
+            <li class="nav-item">
+                <button class="nav-link active" id="btn-select"><i class="bi bi-arrows-move"></i> <small>Selection</small></button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="btn-shapes"><i class="bi bi-square-fill"></i> <small>Shapes</small></button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="btn-text"><i class="bi bi-cursor-text"></i> <small>Text</small></button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="btn-settings"><i class="bi bi-gear"></i> <small>Settings</small></button>
+            </li>
+        </ul>
+    </header>
+    <main class="w-100 flex-grow-1 position-relative d-flex">
+        <section class="position-absolute top-0 start-0 bg-secondary-dark shadow h-100 w-15" id="left-menu">
+            <p class="fs-3 text-center mx-2">Title</p>
+            <hr class="mx-3">
+            <section id="left-sub-menu"></section>
+            <button id="btn-collapse" class="btn bg-secondary-dark"><i></i></button>
+        </section>
+        <section class="flex-grow-1 d-flex align-items-center justify-content-center">
+            <canvas id="fabric"></canvas>
+        </section>
+        <section class="position-absolute top-0 end-0 bg-secondary-dark" id="right-menu">
+
+        </section>
+    </main>
+    <footer>
+
+    </footer>
+    <script>
+        let canvas = new fabric.Canvas("fabric");
+        canvas.originalH = canvas.height;
+        canvas.originalW = canvas.width;
+
+        let leftMenu = document.getElementById("left-menu");
+        let shapes = [
+            {
+                name: "square",
+                svg: `<svg viewBox="-10 -10 120 120"><polygon points="0 0, 0 100, 100 100, 100 0" stroke-width="8" stroke="currentColor" fill="none"></polygon></svg>`
+            },
+            {
+                name: "diamond",
+                svg: `<svg viewBox="-8 -8 120 120"><polygon fill="none" stroke-width="8" stroke="currentColor" points="50 0, 85 50, 50 100, 15 50"></polygon></svg>`
+            },
+            {
+                name: "circle",
+                svg: `<svg viewBox="-2 -2 100 100"><circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="8" fill="none"></circle></svg>`,
+            }
+        ]
+
+        canvas.on("selection:created", function (e) {
+            let activeObject = canvas.getActiveObject();
+            ShowSelectionMenu(activeObject);
+        })
+
+        canvas.on("selection:created", function (e) {
+            let activeObject = canvas.getActiveObject();
+            ShowSelectionMenu(activeObject);
+        })
+
+        canvas.on("object:modified", function (e) {
+            canvas.renderAll();
+        })
+
+        let buttons = {
+            select: document.getElementById("btn-select"),
+            shapes: document.getElementById("btn-shapes"),
+            text: document.getElementById("btn-text"),
+            settings: document.getElementById("btn-settings"),
+        }
+        
+        let activeButton = buttons.select;
+        for(const button of Object.values(buttons)) {
+            button.addEventListener("click", function() {
+                setButtonActive(button);
+                changeMode();
+            });
+        }
+
+        function setButtonActive(button) {
+            button.classList.add("active");
+            activeButton.classList.remove("active");
+            activeButton = button;
+        }
+
+        leftMenu.querySelector("#btn-collapse").addEventListener("click", function() {
+            if(leftMenu.classList.contains("slide-collapse")) {
+                leftMenu.classList.remove("slide-collapse");
+                leftMenu.classList.add("slide-expand");
+            }
+            else {
+                leftMenu.classList.remove("slide-expand");
+                leftMenu.classList.add("slide-collapse");
+            }
+        });
+
+        function changeMode() {
+            switch(activeButton) {
+                case buttons.shapes:
+                    ShowShapesMenu();
+                    break;
+
+                case buttons.text:
+                    ShowTextMenu();
+                    break;
+
+                case buttons.settings:
+                    ShowSettingsMenu();
+                    break;
+            }
+        }
+
+        function ShowShapesMenu() {
+            leftMenu.querySelector("p").innerText = "Shapes";
+            let submenu = leftMenu.querySelector("#left-sub-menu");
+            submenu.innerHTML = `
+                <div class="flex-row-gap-1 flex-col-gap-1 d-flex flex-wrap mx-2 justify-content-start" id="submenu"></div>
+            `;
+
+            for(const shape of shapes) {
+                let div = document.createElement("div");
+
+                let button = document.createElement("button");
+                button.classList.add("btn", "btn-primary", "text-white");
+                button.dataset.shape = shape.name;
+                button.innerHTML = `<svg viewBox="0 0 10 10" width="20">${shape.svg}</svg>`;
+
+                button.addEventListener("click", function() {
+                    CreateFabricSVG(shape.svg);
+                });
+
+                div.appendChild(button);
+                submenu.querySelector("#submenu").appendChild(div);
+            }                
+        }
+
+        function CreateFabricSVG(svg) {
+            fabric.loadSVGFromString(svg, (objects, options) => {
+                let obj = fabric.util.groupSVGElements(objects, options)
+                obj.strokeUniform = true
+                obj.strokeLineJoin = 'miter'
+                obj.scaleToWidth(100)
+                obj.scaleToHeight(100)
+                obj.set({
+                    left: 0,
+                    top: 0
+                })
+                canvas.add(obj).renderAll();
+            })
+        }
+
+        function ShowSettingsMenu() {
+            leftMenu.querySelector("p").innerText = "Settings";
+            let submenu = leftMenu.querySelector("#left-sub-menu");
+            submenu.innerHTML = `
+            <div class="d-flex flex-row-gap-1 flex-column" id="canvas-settings"></div>
+            <div class="d-flex flex-row-gap-1 flex-column mt-3" id="canvas-background"></div>
+            `
+            
+            addNumberField(submenu.querySelector("#canvas-settings"), "Canvas Width", canvas.width, 1, (value) => {
+                canvas.setWidth(value);
+                canvas.originalW = value;
+            });
+
+            addNumberField(submenu.querySelector("#canvas-settings"), "Canvas Height", canvas.height, 1, (value) => {
+                canvas.setHeight(value);
+                canvas.originalH = value;
+            });
+
+            addImageUpload(submenu.querySelector("#canvas-background"), "Background Image", (dataUri) => {
+                fabric.Image.fromURL(dataUri, (img) => {
+                    img.set({
+                        left: 0,
+                        top: 0
+                    })
+                    img.scaleToHeight(canvas.originalH)
+                    img.scaleToWidth(canvas.originalW)
+                    canvas.setBackgroundImage(img)
+                    canvas.renderAll()
+                })
+            });
+        }
+
+        function addNumberField(parent, title, initialValue, minValue, callback) {
+            let div = document.createElement("div");
+            div.classList.add("d-flex", "justify-content-between", "mx-3", "align-items-center");
+
+            let label = document.createElement("label");
+            label.innerText = title;
+            label.classList.add("fs-5", "text-secondary");
+            div.appendChild(label);
+
+            let input = document.createElement("input");
+            input.type = "number";
+            input.min = minValue;
+            input.value = initialValue;
+            input.addEventListener("change", function() {
+                callback(input.value);
+            });
+            div.appendChild(input);
+            parent.appendChild(div);
+        }
+
+        function ShowSelectionMenu(object) {
+            setButtonActive(buttons.select);
+            leftMenu.querySelector("p").innerText = "Selection";
+            let submenu = leftMenu.querySelector("#left-sub-menu");
+            submenu.innerHTML = `
+            <div class="d-flex flex-row-gap-1 flex-column" id="colors"></div>
+            `;
+
+            addColorPicker(submenu.querySelector("#colors"), "Stroke Color", object.stroke, (color) => {
+                object.set({stroke: `#${color.toHex()}`});
+                canvas.renderAll();
+            })
+
+            addColorPicker(submenu.querySelector("#colors"), "Fill Color", object.fill, (color) => {
+                object.set({fill: `#${color.toHex()}`});
+                canvas.renderAll();
+            })
+        }
+
+        function addColorPicker(parent, title, initialValue, callback) {
+            let div = document.createElement("div");
+            div.classList.add("d-flex", "justify-content-between", "mx-3", "align-items-center");
+
+            let label = document.createElement("label");
+            label.innerText = title;
+            label.classList.add("fs-5", "text-secondary");
+            div.appendChild(label);
+
+            let input = document.createElement("input");
+            input.type = "color";
+            input.value = initialValue;
+            input.addEventListener("change", function() {
+                callback(new fabric.Color(input.value));
+            });
+            div.appendChild(input);
+            parent.appendChild(div);
+        }
+
+        function processImageFile(file) {
+            return new Promise((resolve) => {
+                let reader = new FileReader()
+                reader.onload = (f) => {
+                    resolve(f.target.result);
+                }
+                reader.readAsDataURL(file)
+            })
+        }
+
+        function addImageUpload(parent, title, callback, allowedTypes=["image/jpeg", "image/jpg", "image/png"]) {
+            let div = document.createElement("div");
+            div.classList.add("d-flex", "justify-content-between", "mx-3", "align-items-center");
+
+            let label = document.createElement("label");
+            label.innerText = title;
+            label.classList.add("fs-5", "text-secondary");
+            div.appendChild(label);
+
+            let button = document.createElement("button");
+            button.classList.add("btn", "btn-primary");
+            button.innerHTML = `<i class="bi bi-cloud-arrow-up"></i> Upload image`;
+
+            button.addEventListener("click", () => {
+                let modal;
+                let input = document.createElement("input");
+                input.classList.add("hidden");
+                input.type = "file";
+                input.accept = allowedTypes.join(",");
+                input.addEventListener("change", () => {
+                    if (input.files.length === 0) return;
+                    if(!allowedTypes.includes(input.files[0].type)) return;
+                    processImageFile(input.files[0])
+                    .then((data) => {
+                        callback(data);
+                        input.remove();
+                        modal.remove();
+                    });
+                })
+
+                modal = createFileDropModal(allowedTypes, input, (file) => {
+                    processImageFile(file)
+                    .then((data) => {
+                        callback(data);
+                        input.remove();
+                        modal.remove();
+                    })
+                });
+
+                document.body.appendChild(input);
+            })
+
+            div.appendChild(button);
+            parent.appendChild(div);
+        }
+
+        function createFileDropModal(allowedTypes, input, callback) {
+            let modal = document.createElement("div");
+            modal.classList.add("modal", "d-block");
+            modal.innerHTML = `
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Select an image</h5>
+                        <button type="button" id="btn-close" class="btn-close" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="d-flex justify-content-center flex-column">
+                            <p>
+                                Click here to select an image or drop an image file
+                            </p>
+                            <p class="text-center"><small id="modal-message"></small></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+            
+            modal.querySelector("#modal-message").innerText = `(Only ${allowedTypes.map(t => t.split("/")[1].toUpperCase()).join(", ")} images are supported.)`;
+
+            modal.querySelector("#btn-close").addEventListener("click", (e) => {
+                e.preventDefault();
+                modal.remove();
+                input.remove();
+            });
+
+            modal.querySelector(".modal-body").addEventListener("click", (e) => {
+                input.click();
+            });
+
+            modal.querySelector(".modal-body").addEventListener("dragover", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+
+            modal.querySelector(".modal-body").addEventListener("dragleave", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+
+            modal.querySelector(".modal-body").addEventListener("drop", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (e.dataTransfer) {
+                    if (e.dataTransfer.files.length) {
+                        let files = e.dataTransfer.files
+                        callback(files[0]);
+                    }
+                }
+            });
+
+            document.body.appendChild(modal);
+            return modal;
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
+</body>
+</html>

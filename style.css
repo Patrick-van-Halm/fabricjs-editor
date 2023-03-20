@@ -1,0 +1,87 @@
+.nav .nav-link {
+    background: rgb(109, 150, 248);
+    color: white !important;
+}
+
+.hidden {
+    display: none;
+}
+
+.flex-col-gap-1 {
+    column-gap: 1em;
+}
+
+.flex-col-gap-2 {
+    column-gap: 2em;
+}
+
+.flex-row-gap-1 {
+    row-gap: 1em;
+}
+
+.canvas-container {
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAHUlEQVQ4jWNgYGAQIYAJglEDhoUBg9+FowbQ2gAARjwKARjtnN8AAAAASUVORK5CYII=");
+    border: 1px solid #ccc;
+}
+
+.bg-secondary-light {
+    background-color: var(--bs-secondary-bg);
+}
+
+.bg-secondary-dark {
+    background-color: #dadada;
+}
+
+.w-15 {
+    width: 15%;
+}
+
+#left-menu #btn-collapse{
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    border-radius: 0 5px 5px 0;
+
+    background-image: url('https://icons.getbootstrap.com/assets/icons/chevron-bar-left.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    width: 25px;
+    height: 25px;
+}
+
+#left-menu.slide-collapse #btn-collapse{
+    background-image: url('https://icons.getbootstrap.com/assets/icons/chevron-bar-right.svg');
+}
+
+#left-menu #btn-collapse:hover{
+    background-color: #c0c0c0;
+}
+
+#left-menu.slide-expand {
+    animation: slide-expand 0.5s ease-in-out forwards;
+    animation-fill-mode: both;
+}
+
+#left-menu.slide-collapse {
+    animation: slide-collapse 0.5s ease-in-out forwards;
+    animation-fill-mode: both;
+}
+
+@keyframes slide-collapse {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-100%);
+    }
+}
+
+@keyframes slide-expand {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
