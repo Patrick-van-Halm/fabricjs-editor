@@ -1,6 +1,14 @@
+body {
+    overflow: hidden;
+}
+
 .nav .nav-link {
     background: rgb(109, 150, 248);
     color: white !important;
+}
+
+.bg-unset {
+    background: unset;
 }
 
 .hidden {
@@ -32,8 +40,8 @@
     background-color: #dadada;
 }
 
-.w-15 {
-    width: 15%;
+.w-20 {
+    width: 20%;
 }
 
 #left-menu #btn-collapse{
@@ -59,16 +67,16 @@
 }
 
 #left-menu.slide-expand {
-    animation: slide-expand 0.5s ease-in-out forwards;
+    animation: left-slide-expand 0.5s ease-in-out forwards;
     animation-fill-mode: both;
 }
 
 #left-menu.slide-collapse {
-    animation: slide-collapse 0.5s ease-in-out forwards;
+    animation: left-slide-collapse 0.5s ease-in-out forwards;
     animation-fill-mode: both;
 }
 
-@keyframes slide-collapse {
+@keyframes left-slide-collapse {
     from {
         transform: translateX(0);
     }
@@ -77,11 +85,65 @@
     }
 }
 
-@keyframes slide-expand {
+@keyframes left-slide-expand {
     from {
         transform: translateX(-100%);
     }
     to {
         transform: translateX(0);
     }
+}
+
+#right-menu #btn-collapse{
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    border-radius: 5px 0 0 5px;
+
+    background-image: url('https://icons.getbootstrap.com/assets/icons/chevron-bar-right.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    width: 25px;
+    height: 25px;
+}
+
+#right-menu.slide-collapse #btn-collapse{
+    background-image: url('https://icons.getbootstrap.com/assets/icons/chevron-bar-left.svg');
+}
+
+#right-menu #btn-collapse:hover{
+    background-color: #c0c0c0;
+}
+
+#right-menu.slide-expand {
+    animation: right-slide-expand 0.5s ease-in-out forwards;
+    animation-fill-mode: both;
+}
+
+#right-menu.slide-collapse {
+    animation: right-slide-collapse 0.5s ease-in-out forwards;
+    animation-fill-mode: both;
+}
+
+@keyframes right-slide-collapse {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes right-slide-expand {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+.layer-active {
+    background-color: #c0c0c0;
 }

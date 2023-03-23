@@ -28,7 +28,7 @@
         </ul>
     </header>
     <main class="w-100 flex-grow-1 position-relative d-flex">
-        <section class="position-absolute top-0 start-0 bg-secondary-dark shadow h-100 w-15" id="left-menu">
+        <section class="position-absolute top-0 start-0 bg-secondary-dark shadow h-100 w-20" id="left-menu">
             <p class="fs-3 text-center mx-2">Title</p>
             <hr class="mx-3">
             <section id="left-sub-menu"></section>
@@ -37,8 +37,16 @@
         <section class="flex-grow-1 d-flex align-items-center justify-content-center">
             <canvas id="fabric"></canvas>
         </section>
-        <section class="position-absolute top-0 end-0 bg-secondary-dark" id="right-menu">
-
+        <section class="position-absolute top-0 end-0 bg-secondary-dark shadow h-100 w-20" id="right-menu">
+            <p class="fs-3 text-center mx-2">Layers</p>
+            <hr class="mx-3">
+            <section id="right-sub-menu">
+                <ul class="list-group list-group-flush"></ul>
+                <div class="d-flex">
+                    <button class="btn btn-primary shadow-sm flex-grow-1 mx-2 mt-3" onclick="addNewLayer()">Add layer</button>
+                </div>
+            </section>
+            <button id="btn-collapse" class="btn bg-secondary-dark"><i></i></button>
         </section>
     </main>
     <footer>
@@ -50,6 +58,7 @@
         canvas.originalW = canvas.width;
 
         let leftMenu = document.getElementById("left-menu");
+        let rightMenu = document.getElementById("right-menu");
         let shapes = [
             {
                 name: "square",
@@ -111,6 +120,212 @@
             }
         });
 
+        rightMenu.querySelector("#btn-collapse").addEventListener("click", function() {
+            if(rightMenu.classList.contains("slide-collapse")) {
+                rightMenu.classList.remove("slide-collapse");
+                rightMenu.classList.add("slide-expand");
+            }
+            else {
+                rightMenu.classList.remove("slide-expand");
+                rightMenu.classList.add("slide-collapse");
+            }
+        });
+
+        let layers = [];
+        let curLayerId = 0;
+        let layerList = rightMenu.querySelector("#right-sub-menu ul");
+        addNewLayer();
+        function addNewLayer() {
+            let newIndex = layers.length
+            layers.splice(0, 0, {
+                id: newIndex,
+                objects: [],
+                locked: false,
+                visible: true
+            });
+
+            addLayerHTML(newIndex);
+            updateLayerHtmlOrder();
+            ChangeActiveLayer(newIndex);
+        }
+
+        function addLayerHTML(id) {
+            // <li class="list-group-item bg-unset" data-layer-id="0">
+            //     <div class="d-flex align-items-center flex-col-gap-1">
+            //         <span class="flex-grow-1">Layer name</span>
+            //         <div class="btn-group" role="group" aria-label="Layer buttons">
+            //             <button type="button" class="btn btn-outline-secondary" onclick="ChangeLockState(this)"><i class="bi bi-lock"></i></button>
+            //             <button type="button" class="btn btn-outline-secondary" onclick="ChangeVisibility(this)"><i class="bi bi-eye"></i></button>
+            //         </div>
+            //     </div>
+            // </li>
+            let item = document.createElement("li");
+            item.classList.add("list-group-item", "bg-unset", "border-0");
+            item.setAttribute("data-layer-id", id);
+            item.addEventListener("click", () => ChangeActiveLayer(id));
+
+            let layerHolder = document.createElement("div");
+            layerHolder.classList.add("d-flex", "align-items-center", "flex-col-gap-1");
+
+            let layerName = document.createElement("span");
+            layerName.classList.add("flex-grow-1");
+            layerName.innerText = `Layer ${id + 1}`;
+
+            let buttonGroup = document.createElement("div");
+            buttonGroup.classList.add("btn-group");
+            buttonGroup.role = "group";
+            buttonGroup.ariaLabel = "Layer buttons";
+
+            let btnLock = document.createElement("button");
+            btnLock.type = "button";
+            btnLock.name = "lock";
+            btnLock.classList.add("btn", "btn-outline-secondary");
+            btnLock.addEventListener("click", () => ChangeLockState(id));
+
+            let btnLockIcon = document.createElement("i");
+            btnLockIcon.classList.add("bi", "bi-unlock");
+
+            let btnVisible = document.createElement("button");
+            btnVisible.type = "button";
+            btnVisible.name = "visible"
+            btnVisible.classList.add("btn", "btn-outline-secondary");
+            btnVisible.addEventListener("click", () => ChangeVisibility(id));
+
+            let btnVisibleIcon = document.createElement("i");
+            btnVisibleIcon.classList.add("bi", "bi-eye");
+
+            let btnUp = document.createElement("button");
+            btnUp.type = "button";
+            btnUp.classList.add("btn", "btn-outline-secondary");
+            btnUp.addEventListener("click", () => MoveLayerUp(id));
+
+            let btnUpIcon = document.createElement("i");
+            btnUpIcon.classList.add("bi", "bi-arrow-up");
+
+            let btnDown = document.createElement("button");
+            btnDown.type = "button";
+            btnDown.classList.add("btn", "btn-outline-secondary");
+            btnDown.addEventListener("click", () => MoveLayerDown(id));
+
+            let btnDownIcon = document.createElement("i");
+            btnDownIcon.classList.add("bi", "bi-arrow-down");
+
+            btnLock.appendChild(btnLockIcon);
+            btnVisible.appendChild(btnVisibleIcon);
+            btnUp.appendChild(btnUpIcon);
+            btnDown.appendChild(btnDownIcon);
+
+            buttonGroup.appendChild(btnLock);
+            buttonGroup.appendChild(btnVisible);
+            buttonGroup.appendChild(btnUp);
+            buttonGroup.appendChild(btnDown);
+
+            layerHolder.appendChild(layerName);
+            layerHolder.appendChild(buttonGroup);
+
+            item.appendChild(layerHolder);
+
+            layerList.appendChild(item);
+        }
+
+        function updateLayerHtmlOrder() {
+            for(const child of layerList.children) {
+                let id = child.getAttribute("data-layer-id");
+                child.style.order = layers.findIndex(l => l.id == id);
+            }
+        }
+
+        function ChangeLockState(id) {
+            let layer = layers.find(l => l.id == id);
+            layerList.querySelector(`li[data-layer-id="${id}"] button[name="lock"] i`).classList.toggle("bi-lock");
+            layerList.querySelector(`li[data-layer-id="${id}"] button[name="lock"] i`).classList.toggle("bi-unlock");
+            layer.locked = !layer.locked;
+
+            updateLock(layer);
+        }
+
+        function ChangeVisibility(id) {
+            let layer = layers.find(l => l.id == id);
+            layerList.querySelector(`li[data-layer-id="${id}"] button[name="visible"] i`).classList.toggle("bi-eye");
+            layerList.querySelector(`li[data-layer-id="${id}"] button[name="visible"] i`).classList.toggle("bi-eye-slash");
+            layer.visible = !layer.visible;
+
+            updateVisibility(layer);
+        }
+
+        function ChangeActiveLayer(id) {
+            let curLayer = layers.find(l => l.id == curLayerId);
+            let layer = layers.find(l => l.id == id);
+
+            layerList.querySelector(`li[data-layer-id="${curLayerId}"]`).classList.remove("layer-active");
+            updateSelectables(curLayer, false);
+
+            curLayerId = id;
+            layerList.querySelector(`li[data-layer-id="${curLayerId}"]`).classList.add("layer-active");
+            updateSelectables(layer, true);
+        }
+
+        function MoveLayerUp(id) {
+            let layer = layers.find(l => l.id == id);
+            let layerIndex = layers.indexOf(layer);
+            if(layerIndex === 0) return;
+
+            let nextLayer = layers[layerIndex - 1];
+            moveLayerAbove(layer, nextLayer);
+            updateLayerHtmlOrder();
+        }
+
+        function MoveLayerDown(id) {
+            let layer = layers.find(l => l.id == id);
+            let layerIndex = layers.indexOf(layer);
+            if(layerIndex === layers.length - 1) return;
+
+            let nextLayer = layers[layerIndex + 1];
+            moveLayerAbove(nextLayer, layer);
+            updateLayerHtmlOrder();
+        }
+
+        function updateLock(layer) {
+            for(const obj of layer.objects) {
+                obj.set({
+                    lockMovementX: layer.locked,
+                    lockMovementY: layer.locked,
+                    lockRotation: layer.locked,
+                    lockScalingX: layer.locked,
+                    lockScalingY: layer.locked,
+                    lockUniScaling: layer.locked,
+                    lockSkewingX: layer.locked,
+                    lockSkewingY: layer.locked,
+                    lockScalingFlip: layer.locked
+                })
+            }
+        }
+
+        function updateVisibility(layer) {
+            for(const obj of layer.objects) {
+                obj.opacity = layer.visible ? 1 : 0;
+                obj.evented = layer.visible;
+                obj.selectable = layer.visible;
+            }
+            canvas.renderAll();
+        }
+
+        function updateSelectables(layer, selectable) {
+            for(const obj of layer.objects) {
+                obj.evented = selectable;
+                obj.selectable = selectable;
+            }
+        }
+
+        function moveLayerAbove(layer, targetLayer) {
+            let targetLayerZ = canvas.getObjects().indexOf(targetLayer.objects[targetLayer.objects.length - 1]);
+            for(const obj of layer.objects) {
+                canvas.moveTo(obj, targetLayerZ + layer.objects.indexOf(obj));
+            }
+            array_move(layers, layers.indexOf(layer), layers.indexOf(targetLayer));
+            canvas.renderAll();
+        }
+
         function changeMode() {
             switch(activeButton) {
                 case buttons.shapes:
@@ -162,8 +377,19 @@
                     left: 0,
                     top: 0
                 })
-                canvas.add(obj).renderAll();
+                addObjectToCanvas(obj);
             })
+        }
+
+        function addObjectToCanvas(obj) {
+            let layer = layers.find(l => l.id == curLayerId);
+            if(layer.objects.length != 0) {
+                let insertIdx = canvas.getObjects().indexOf(layer.objects[layer.objects.length - 1]) + 1;
+                canvas.insertAt(obj, insertIdx, false);
+            }
+            else canvas.add(obj);
+            canvas.renderAll();
+            layer.objects.push(obj);
         }
 
         function ShowSettingsMenu() {
@@ -204,7 +430,7 @@
 
             let label = document.createElement("label");
             label.innerText = title;
-            label.classList.add("fs-5", "text-secondary");
+            label.classList.add("fs-5");
             div.appendChild(label);
 
             let input = document.createElement("input");
@@ -243,7 +469,7 @@
 
             let label = document.createElement("label");
             label.innerText = title;
-            label.classList.add("fs-5", "text-secondary");
+            label.classList.add("fs-5");
             div.appendChild(label);
 
             let input = document.createElement("input");
@@ -272,12 +498,12 @@
 
             let label = document.createElement("label");
             label.innerText = title;
-            label.classList.add("fs-5", "text-secondary");
+            label.classList.add("fs-5");
             div.appendChild(label);
 
             let button = document.createElement("button");
             button.classList.add("btn", "btn-primary");
-            button.innerHTML = `<i class="bi bi-cloud-arrow-up"></i> Upload image`;
+            button.innerHTML = `<i class="bi bi-cloud-arrow-up"></i> Upload`;
 
             button.addEventListener("click", () => {
                 let modal;
@@ -371,6 +597,16 @@
             document.body.appendChild(modal);
             return modal;
         }
+
+        function array_move(arr, old_index, new_index) {
+            if (new_index >= arr.length) {
+                var k = new_index - arr.length + 1;
+                while (k--) {
+                    arr.push(undefined);
+                }
+            }
+            arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
+        };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
 </body>
